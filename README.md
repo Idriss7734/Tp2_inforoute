@@ -10,3 +10,7 @@ https://pip.pypa.io/en/stable/cli/pip_freeze/
 
 user: admin
 pwd: admin123
+
+# Swagger url
+
+http://localhost:8000/api/swagger
