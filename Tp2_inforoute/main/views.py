@@ -10,10 +10,10 @@ from rest_framework.authtoken.models import Token
 
 from drf_yasg.utils import swagger_auto_schema
 
-from .serializers import LoginSerializer
+from .serializers import LoginSerializer, RegisterSerializer
 
 @swagger_auto_schema(
-    method="post", tags=["register"], request_body=LoginSerializer
+    method="post", tags=["register"], request_body=RegisterSerializer
 )
 @api_view(["POST"])
 def register(request):
@@ -26,8 +26,6 @@ def register(request):
         user = User(username=username, password=make_password(password))
         user.save()
 
-        return render(request, "Tp/register.html", {"status": True})
-
 
 
 
@@ -38,7 +36,7 @@ def register(request):
 def login(request):
     username = request.data["username"]
     password = request.data["password"]
-
+    
     user = User.objects.filter(username=username)
 
     if user.exists():
