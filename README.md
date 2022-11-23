@@ -5,3 +5,8 @@
 python -m pip install -r requirements.txt
 
 https://pip.pypa.io/en/stable/cli/pip_freeze/
+
+# admin authentification
+
+user: admin
+pwd: admin123
