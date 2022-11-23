@@ -16,7 +16,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path("login/", login, name="login"),
+    path("", login, name="login"),
+    path("", register, name="register"),
     path(
         "swagger",
         schema_view.with_ui("swagger", cache_timeout=0),

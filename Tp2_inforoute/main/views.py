@@ -12,6 +12,10 @@ from drf_yasg.utils import swagger_auto_schema
 
 from .serializers import LoginSerializer
 
+@swagger_auto_schema(
+    method="post", tags=["register"], request_body=LoginSerializer
+)
+@api_view(["POST"])
 def register(request):
     if request.method == "GET":
         return render(request, "Tp/register.html", {"status": False})
