@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 
 from drf_yasg.utils import swagger_auto_schema
 
-from .models import Student
+from .models import User
 from .serializers import LoginSerializer, RegisterSerializer
 
 @swagger_auto_schema(
@@ -21,11 +21,12 @@ def register(request):
     if request.method == "GET":
         return render(request, "Tp/register.html", {"status": False})
     elif request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        birthday = request.POST.get("birthday")
-        student =Student(username=username, password=make_password(password), birthday=birthday)
-        student.save()
+        username = request.data["username"]
+        password = request.data["password"]
+        birthday = request.data["birthday"]
+        is_admin = request.data["is_admin"]
+        user =User(username=username, password=make_password(password), birthday=birthday, is_admin=is_admin)
+        user.save()
 
 
 @swagger_auto_schema(
