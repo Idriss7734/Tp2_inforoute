@@ -136,5 +136,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-    ]
+        
+    ],
+    'DATE_INPUT_FORMATS': ['iso-8601', '%Y-%m-%d'],
 }
