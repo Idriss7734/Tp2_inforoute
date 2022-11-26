@@ -1,5 +1,9 @@
 from django.contrib.auth.models import AbstractUser
+import tempfile
+from gtts import gTTS
+from django.core.files import File
 from django.db import models
+from django import forms
 
 # Create your models here.
 
@@ -23,3 +27,19 @@ class Quizs(models.Model):
     reponse2 = models.CharField(max_length=150)
     reponse3 = models.CharField(max_length=150)
     reponse4 = models.CharField(max_length=150)
+
+class TextTts(models.Model):
+    text = models.CharField(max_length=255)
+    audio_file = models.FileField(upload_to='audio/')
+
+    def savef(self, *args, **kwargs):
+        audio_file = gTTS(text=self.text, lang='fr')
+        with tempfile.TemporaryFile() as f:
+            audio_file.write_to_fp(f)
+            file_name = '{}.mp3'.format(self.text)
+            self.audio_file.save(file_name, File(file=f))
+            self.audio_file = File(file=f)
+            
+           
+        
+        

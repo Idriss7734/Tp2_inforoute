@@ -10,14 +10,16 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
 
 from drf_yasg.utils import swagger_auto_schema
+from gtts import gTTS
 
-from .models import CustomUser, Texts
-from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer
+from .models import CustomUser, Texts, TextTts
+from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddtextSerializer
+
 
 @swagger_auto_schema(
     method="post", tags=["Authentication"], request_body=RegisterSerializer
 )
-@api_view(["POST"])
+@api_view(["POST", "GET"])
 def register(request):
     if request.method == "GET":
         return render(request, "Tp/register.html", {"status": False})
@@ -129,3 +131,15 @@ def quiz(request):
     return Response(
         {"message": "Phrase: {}, Reponse1: {}, Reponse2: {}, Reponse3: {}, Reponse4: {}".format(phrase.phrase, phrase.reponse1, phrase.reponse2, phrase.reponse3, phrase.reponse4)}, status=status.HTTP_200_OK
     )
+
+@swagger_auto_schema(method="post", tags=["tts"], request_body=AddtextSerializer)
+@api_view(["POST"])
+def addText(request):
+    text = request.data["text"]
+    audio_file = request.data["text"]
+    if request.method == 'POST':
+        ttsAdd = TextTts(text:=text, audio_file:=audio_file)
+        ttsAdd.savef()
+        #ttsAdd.save()
+        
+
