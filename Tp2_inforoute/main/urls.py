@@ -4,7 +4,7 @@ from rest_framework import routers
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-from .views import register, login, settings, logout, text
+from .views import register, login, settings, logout, text, quiz
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -20,7 +20,8 @@ urlpatterns = [
     path("Login/", login, name="login"),
     path("Logout/", logout, name="logout"),
     path("Settings/", settings, name='settings'),
-    path("Text/", text, name='text'),    
+    path("Text/", text, name='text'), 
+    path("Quiz/", quiz, name='quiz'), 
     path(
         "swagger",
         schema_view.with_ui("swagger", cache_timeout=0),

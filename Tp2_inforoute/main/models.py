@@ -15,3 +15,11 @@ class SettingsAccount(models.Model):
 class Texts(models.Model):
     title = models.CharField(max_length=30)
     phrase = models.CharField(max_length=150)
+
+class Quizs(models.Model):
+    idText= models.FloatField()
+    phrase = models.CharField(max_length=150)
+    reponse1 = models.CharField(max_length=150)
+    reponse2 = models.CharField(max_length=150)
+    reponse3 = models.CharField(max_length=150)
+    reponse4 = models.CharField(max_length=150)
