@@ -11,8 +11,8 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 
 from drf_yasg.utils import swagger_auto_schema
 
-from .models import User, Texts
-from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextSerializer
+from .models import User, Texts, Quizs
+from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer
 
 @swagger_auto_schema(
     method="post", tags=["Authentication"], request_body=RegisterSerializer
@@ -108,7 +108,7 @@ def logout(request):
     )
 
 
-@swagger_auto_schema( method="post", tags=["text"], request_body=TextSerializer)
+@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=TextsSerializer)
 @api_view(["POST"])
 #@permission_classes([IsAuthenticated])
 def text(request):
@@ -119,3 +119,13 @@ def text(request):
         {"message": "Phrase: {}".format(text.phrase)}, status=status.HTTP_200_OK
     )
 
+@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=QuizsSerializer)
+@api_view(["POST"])
+#@permission_classes([IsAuthenticated])
+def quiz(request):
+    text = request.data["idText"]
+    phrase = Quizs.objects.filter(idText=text).first()
+
+    return Response(
+        {"message": "Phrase: {}, Reponse1: {}, Reponse2: {}, Reponse3: {}, Reponse4: {}".format(phrase.phrase, phrase.reponse1, phrase.reponse2, phrase.reponse3, phrase.reponse4)}, status=status.HTTP_200_OK
+    )
