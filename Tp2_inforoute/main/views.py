@@ -73,22 +73,23 @@ def login(request):
     method="post", tags=["Settings"], request_body=SettingsAccountSerializer
 )
 @api_view(["POST"])
-@authentication_classes((SessionAuthentication, TokenAuthentication, BasicAuthentication))
 @permission_classes([IsAuthenticated])
+@authentication_classes((SessionAuthentication, TokenAuthentication, BasicAuthentication))
 def settings(request):
-    #username = request.data["username"]
-    #password = request.data["password"]
     
+
     token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]
-    user = Token.objects.filter(key=token_key).first().user
+    print(token_key)
+    CustomUser = Token.objects.filter(key=token_key).first().CustomUser
+    
+    #CustomUser = CustomUser.objects.filter(key="a23af3eff3a14f3610a2d28d8d2dd34f8e9c57e7").exists()
 
+    #CustomUser = CustomUser.objects.get(username=username)
 
-    #user = User.objects.filter(username=username)
-
-    if user.exists():
+    if CustomUser.objects.filter(auth_token=token_key).exists():
         return Response(
             {"message": "Utilisateur existe"},
-            status=status.HTTP_404_NOT_FOUND,
+            status=status.HTTP_200_OK,
         )
     else:
         return Response(
@@ -135,10 +136,10 @@ def quiz(request):
 @swagger_auto_schema(method="post", tags=["tts"], request_body=AddtextSerializer)
 @api_view(["POST"])
 def addText(request):
-    text = request.data["text"]
+    title = request.data["title"]
     audio_file = request.data["text"]
     if request.method == 'POST':
-        ttsAdd = TextTts(text:=text, audio_file:=audio_file)
+        ttsAdd = TextTts(title:=title, audio_file:=audio_file)
         ttsAdd.savef()
         #ttsAdd.save()
         

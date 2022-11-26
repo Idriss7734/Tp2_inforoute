@@ -30,4 +30,4 @@ class QuizsSerializer(serializers.ModelSerializer):
 class AddtextSerializer(serializers.ModelSerializer):
     class Meta:
         model = TextTts
-        fields = ("text", "audio_file")
+        fields = ("title", "audio_file")

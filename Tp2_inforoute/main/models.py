@@ -29,14 +29,14 @@ class Quizs(models.Model):
     reponse4 = models.CharField(max_length=150)
 
 class TextTts(models.Model):
-    text = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
     audio_file = models.FileField(upload_to='audio/')
 
     def savef(self, *args, **kwargs):
-        audio_file = gTTS(text=self.text, lang='fr')
+        audio_file = gTTS(title=self.title, lang='fr')
         with tempfile.TemporaryFile() as f:
             audio_file.write_to_fp(f)
-            file_name = '{}.mp3'.format(self.text)
+            file_name = '{}.mp3'.format(self.title)
             self.audio_file.save(file_name, File(file=f))
             self.audio_file = File(file=f)
             

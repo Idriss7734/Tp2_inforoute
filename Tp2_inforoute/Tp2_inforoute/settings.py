@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-nvjxz)wd39$$!a%i#+1t$m1k@-j8=@%q9di*r#(q_d2yu0q1yt
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Application definition
 
@@ -38,10 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main.apps.MainConfig',
+ 
     'rest_framework',
     'rest_framework.authtoken',
     'drf_yasg',
+    "corsheaders",
+
+    'main.apps.MainConfig',
 ]
 
 MIDDLEWARE = [
@@ -52,6 +55,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'Tp2_inforoute.urls'
@@ -137,7 +142,15 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         
-    ]
+    ],
+
 }
 
 AUTH_USER_MODEL = "main.customuser"  # new
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+         "Basic": {"type": "basic"},
+        #"Bearer": {"type": "apiKey"},
+        }
+}
