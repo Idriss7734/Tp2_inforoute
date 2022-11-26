@@ -1,16 +1,16 @@
 from rest_framework import serializers
 
-from .models import User, SettingsAccount, Texts
+from .models import CustomUser, SettingsAccount, Texts
 
 class LoginSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
+        model = CustomUser
         fields = ("username", "password")
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ("username", "password", "birthday", "is_admin")
+        model = CustomUser
+        fields = ("username", "password", "birthday", "is_superuser")
 
 class SettingsAccountSerializer(serializers.ModelSerializer):
     class Meta:

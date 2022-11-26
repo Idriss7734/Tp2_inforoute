@@ -11,7 +11,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 
 from drf_yasg.utils import swagger_auto_schema
 
-from .models import User, Texts
+from .models import CustomUser, Texts
 from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextSerializer
 
 @swagger_auto_schema(
@@ -25,8 +25,8 @@ def register(request):
         username = request.data["username"]
         password = request.data["password"]
         birthday = request.data["birthday"]
-        is_admin = request.data["is_admin"]
-        user =User(username=username, password=make_password(password), birthday=birthday, is_admin=is_admin)
+        is_superuser = request.data["is_superuser"]
+        user = CustomUser(username=username, password=make_password(password), birthday=birthday, is_superuser=is_superuser)
         user.save()
 
 
@@ -38,7 +38,7 @@ def login(request):
     username = request.data["username"]
     password = request.data["password"]
     
-    user = User.objects.filter(username=username)
+    user = CustomUser.objects.filter(username=username)
 
     if user.exists():
         auth_success = check_password(password, user.first().password)
