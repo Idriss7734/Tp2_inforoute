@@ -12,7 +12,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from drf_yasg.utils import swagger_auto_schema
 from gtts import gTTS
 
-from .models import CustomUser, Texts, TextTts
+from .models import CustomUser, Texts, TextTts, Quizs
 from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddtextSerializer
 
 
@@ -117,7 +117,7 @@ def logout(request):
 def text(request):
     textTitle = request.data["title"]
     text = Texts.objects.filter(title=textTitle).first()
-
+    
     return Response(
         {"message": "Phrase: {}".format(text.phrase)}, status=status.HTTP_200_OK
     )
@@ -132,6 +132,30 @@ def quiz(request):
     return Response(
         {"message": "Phrase: {}, Reponse1: {}, Reponse2: {}, Reponse3: {}, Reponse4: {}".format(phrase.phrase, phrase.reponse1, phrase.reponse2, phrase.reponse3, phrase.reponse4)}, status=status.HTTP_200_OK
     )
+
+@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=TextsSerializer)
+@api_view(["POST"])
+#@permission_classes([IsAuthenticated])
+def getTextAndQuiz(request):
+    # get text
+    textTitle = request.data["title"]
+    #text = Texts.objects.filter(title=textTitle).first()
+    
+    # get quiz
+    # idText = text.Quizs.objects.filter(idText=text.id).first()
+    # quizs = text.Quizs.objects.filter(idText=text.id)
+    
+    texts = Texts.objects.all()
+    text_serializer = TextsSerializer(texts, many=True)
+    quizs = Quizs.objects.all()
+    quiz_seri = QuizsSerializer(quizs, many=True)
+    
+    return Response(
+        {"message": "Texts: {}  Quizs: {}".format(text_serializer.data, quiz_seri.data)}, status=status.HTTP_200_OK
+    )
+
+
+
 
 @swagger_auto_schema(method="post", tags=["tts"], request_body=AddtextSerializer)
 @api_view(["POST"])

@@ -17,15 +17,18 @@ class SettingsAccountSerializer(serializers.ModelSerializer):
         model = SettingsAccount
         fields = ("username", "old_password", "new_password", "birthday")
 
-class TextsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Texts
-        fields = ("__all__")
-
 class QuizsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Quizs
+        model = Quizs       
         fields = ("__all__")
+        
+class TextsSerializer(serializers.ModelSerializer):
+    quizs = QuizsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Texts
+        fields = ("title", "quizs")
+
 
 class AddtextSerializer(serializers.ModelSerializer):
     class Meta:
