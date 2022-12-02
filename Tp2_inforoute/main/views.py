@@ -137,17 +137,11 @@ def quiz(request):
 @api_view(["POST"])
 #@permission_classes([IsAuthenticated])
 def getTextAndQuiz(request):
-    # get text
     textTitle = request.data["title"]
-    #text = Texts.objects.filter(title=textTitle).first()
-    
-    # get quiz
-    # idText = text.Quizs.objects.filter(idText=text.id).first()
-    # quizs = text.Quizs.objects.filter(idText=text.id)
-    
-    texts = Texts.objects.all()
-    text_serializer = TextsSerializer(texts, many=True)
-    quizs = Quizs.objects.all()
+
+    text = Texts.objects.filter(title = textTitle)
+    text_serializer = TextsSerializer(text, many=True)
+    quizs = Quizs.objects.filter(idText = text[:1]) #text[:1] = premier champ d'un element de type text, ce qui donne l'id
     quiz_seri = QuizsSerializer(quizs, many=True)
     
     return Response(
