@@ -31,6 +31,7 @@ def register(request):
         is_superuser = request.data["is_superuser"]
         user = CustomUser(username=username, password=make_password(password), birthday=birthday, is_superuser=is_superuser)
         user.save()
+    return Response(status=status.HTTP_200_OK)
 
 @swagger_auto_schema(
     method="post", tags=["Authentication"], request_body=LoginSerializer
@@ -73,6 +74,7 @@ def login(request):
     method="put", tags=["Settings"], 
     request_body=SettingsAccountSerializer,
     manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER), 
         openapi.Parameter('username',in_=openapi.IN_QUERY, description='username', type=openapi.TYPE_STRING), 
         openapi.Parameter('old_password',in_=openapi.IN_QUERY, description='old_password', type=openapi.TYPE_STRING),
         openapi.Parameter('new_password',in_=openapi.IN_QUERY, description='new_password', type=openapi.TYPE_STRING),
@@ -88,7 +90,7 @@ def login(request):
 @authentication_classes((SessionAuthentication, TokenAuthentication, BasicAuthentication))
 def settings(request):
     
-    admin = False
+    admin = True
     token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]
     print(token_key)
     user = Token.objects.filter(key="a23af3eff3a14f3610a2d28d8d2dd34f8e9c57e7").first()
@@ -117,33 +119,69 @@ def settings(request):
                 status=status.HTTP_200_OK,
             )
     elif request.method == "PUT":
-        SettingsAccount = CustomUser.objects.filter(auth_token=user)
-        SettingsAccounts = CustomUser.objects.get(auth_token=user)
-        username = request.GET.get('username')
-        old_password = request.GET.get('old_password')
-        new_password = request.GET.get('new_password')
-        birthday = request.GET.get('birthday')
-        
-        password = SettingsAccounts.password
-        data = {'username':SettingsAccounts.username, 'password':SettingsAccounts.password, 'birthday': SettingsAccounts.birthday}
+        if admin:
+            try:
+                SettingsAccounts = CustomUser.objects.all()
+                id = request.GET.get('id')
+                username = request.GET.get('username')
+                old_password = request.GET.get('old_password')
+                new_password = request.GET.get('new_password')
+                birthday = request.GET.get('birthday')
 
-        if username != "" and  username == SettingsAccounts.username:
-            data['username'] = username
+                for user in SettingsAccounts:
+                    if user.id == int(id):
+                        account = user
+                print(birthday)
+                data = {'username':account.username, 'password':account.password, 'birthday': account.birthday}
+                print(data)
+                if username != None:
+                    data['username'] = username
+                    print(data)
 
-        if old_password != "" and  check_password(old_password, SettingsAccounts.password):
-            password=make_password(new_password)
-            data['password'] = password
+                if old_password != None and  check_password(old_password, account.password):
+                    password=make_password(new_password)
+                    data['password'] = password
+                    print(data)
 
-        if birthday != "" and  birthday == SettingsAccounts.birthday:
-            data['birthday'] = birthday
+                if birthday != None:
+                    data['birthday'] = birthday
+                    print(data)
+
+                print(data)
+                SettingsAccount_serializer = SettingsAccountSerializer(account,data=data)
+                if not SettingsAccount_serializer.is_valid():
+                    return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                SettingsAccount_serializer.save()
+                return Response(status=status.HTTP_200_OK)
+            except:
+                return Response("The user id is invalide.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            SettingsAccounts = CustomUser.objects.get(auth_token=user)
+            username = request.GET.get('username')
+            old_password = request.GET.get('old_password')
+            new_password = request.GET.get('new_password')
+            birthday = request.GET.get('birthday')
+            
+            data = {'username':SettingsAccounts.username, 'password':SettingsAccounts.password, 'birthday': SettingsAccounts.birthday}
+
+            if username != None:
+                data['username'] = username
+
+            if old_password != None and  check_password(old_password, SettingsAccounts.password):
+                password=make_password(new_password)
+                data['password'] = password
+
+            if birthday != None:
+                data['birthday'] = birthday
 
 
-        SettingsAccount_serializer = SettingsAccountSerializer(SettingsAccounts,data=data)
-        if not SettingsAccount_serializer.is_valid():
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            SettingsAccount_serializer = SettingsAccountSerializer(SettingsAccounts,data=data)
+            if not SettingsAccount_serializer.is_valid():
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        SettingsAccount_serializer.save()
-        return Response(status=status.HTTP_200_OK)
+            SettingsAccount_serializer.save()
+            return Response(status=status.HTTP_200_OK)
 
 @swagger_auto_schema( method="get", tags=["Authentication"])
 @api_view(["GET"])
