@@ -8,9 +8,10 @@ from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
-
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.parsers import JSONParser 
 from drf_yasg.utils import swagger_auto_schema
-from gtts import gTTS
+from drf_yasg import openapi
 
 from .models import CustomUser, Texts, TextTts, Quizs, Quizattempt
 from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddtextSerializer, QuizattemptSerializer
@@ -30,7 +31,6 @@ def register(request):
         is_superuser = request.data["is_superuser"]
         user = CustomUser(username=username, password=make_password(password), birthday=birthday, is_superuser=is_superuser)
         user.save()
-
 
 @swagger_auto_schema(
     method="post", tags=["Authentication"], request_body=LoginSerializer
@@ -70,32 +70,80 @@ def login(request):
         )
 
 @swagger_auto_schema(
-    method="post", tags=["Settings"], request_body=SettingsAccountSerializer
+    method="put", tags=["Settings"], 
+    request_body=SettingsAccountSerializer,
+    manual_parameters=[
+        openapi.Parameter('username',in_=openapi.IN_QUERY, description='username', type=openapi.TYPE_STRING), 
+        openapi.Parameter('old_password',in_=openapi.IN_QUERY, description='old_password', type=openapi.TYPE_STRING),
+        openapi.Parameter('new_password',in_=openapi.IN_QUERY, description='new_password', type=openapi.TYPE_STRING),
+        openapi.Parameter('birthday',in_=openapi.IN_QUERY, description='birthday', type=openapi.TYPE_STRING),
+        ]
 )
-@api_view(["POST"])
+@swagger_auto_schema(
+    method="post", tags=["Settings"], request_body=SettingsAccountSerializer,
+
+)
+@api_view(["POST", "GET", "PUT", "DELETE"])
 @permission_classes([IsAuthenticated])
 @authentication_classes((SessionAuthentication, TokenAuthentication, BasicAuthentication))
 def settings(request):
     
-
+    admin = False
     token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]
     print(token_key)
-    CustomUser = Token.objects.filter(key=token_key).first().CustomUser
-    
+    user = Token.objects.filter(key="a23af3eff3a14f3610a2d28d8d2dd34f8e9c57e7").first()
     #CustomUser = CustomUser.objects.filter(key="a23af3eff3a14f3610a2d28d8d2dd34f8e9c57e7").exists()
-
+    print(user)
     #CustomUser = CustomUser.objects.get(username=username)
 
-    if CustomUser.objects.filter(auth_token=token_key).exists():
-        return Response(
-            {"message": "Utilisateur existe"},
-            status=status.HTTP_200_OK,
-        )
-    else:
-        return Response(
-            {"message": "L'utilisateur n'existe pas !"},
-            status=status.HTTP_404_NOT_FOUND,
-        )
+    #if not CustomUser.objects.filter(auth_token=token_key).exists():
+    #    return Response(
+    #        {"message": "L'utilisateur n'existe pas !"},
+    #        status=status.HTTP_404_NOT_FOUND,
+    #    )
+    if request.method == "GET":
+        if admin:
+            SettingsAccount = CustomUser.objects.all()
+            SettingsAccount_serializer = SettingsAccountSerializer(SettingsAccount, many=True)
+            return Response(
+                SettingsAccount_serializer.data,
+                status=status.HTTP_200_OK,
+            )
+        else:
+            SettingsAccount = CustomUser.objects.get(auth_token=user)
+            SettingsAccount_serializer = SettingsAccountSerializer(SettingsAccount)
+            return Response(
+                SettingsAccount_serializer.data,
+                status=status.HTTP_200_OK,
+            )
+    elif request.method == "PUT":
+        SettingsAccount = CustomUser.objects.filter(auth_token=user)
+        SettingsAccounts = CustomUser.objects.get(auth_token=user)
+        username = request.GET.get('username')
+        old_password = request.GET.get('old_password')
+        new_password = request.GET.get('new_password')
+        birthday = request.GET.get('birthday')
+        
+        password = SettingsAccounts.password
+        data = {'username':SettingsAccounts.username, 'password':SettingsAccounts.password, 'birthday': SettingsAccounts.birthday}
+
+        if username != "" and  username == SettingsAccounts.username:
+            data['username'] = username
+
+        if old_password != "" and  check_password(old_password, SettingsAccounts.password):
+            password=make_password(new_password)
+            data['password'] = password
+
+        if birthday != "" and  birthday == SettingsAccounts.birthday:
+            data['birthday'] = birthday
+
+
+        SettingsAccount_serializer = SettingsAccountSerializer(SettingsAccounts,data=data)
+        if not SettingsAccount_serializer.is_valid():
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        SettingsAccount_serializer.save()
+        return Response(status=status.HTTP_200_OK)
 
 @swagger_auto_schema( method="get", tags=["Authentication"])
 @api_view(["GET"])
@@ -173,4 +221,3 @@ def addText(request):
         ttsAdd.savef()
         #ttsAdd.save()
         
-

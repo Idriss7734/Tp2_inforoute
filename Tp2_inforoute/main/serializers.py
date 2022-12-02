@@ -14,8 +14,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class SettingsAccountSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SettingsAccount
-        fields = ("username", "old_password", "new_password", "birthday")
+        model = CustomUser
+        fields = ("username", "password", "birthday")
+
 
 class QuizsSerializer(serializers.ModelSerializer):
     class Meta:

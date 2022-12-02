@@ -151,6 +151,6 @@ AUTH_USER_MODEL = "main.customuser"  # new
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
          "Basic": {"type": "basic"},
-        #"Bearer": {"type": "apiKey"},
+         "Bearer": {"type": "apiKey"},
         }
 }
