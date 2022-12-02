@@ -21,7 +21,7 @@ class Texts(models.Model):
     phrase = models.CharField(max_length=150)
 
 class Quizs(models.Model):
-    idText= models.FloatField()
+    idText= models.IntegerField()
     phrase = models.CharField(max_length=150)
     reponse1 = models.CharField(max_length=150)
     reponse2 = models.CharField(max_length=150)
@@ -39,7 +39,9 @@ class TextTts(models.Model):
             file_name = '{}.mp3'.format(self.title)
             self.audio_file.save(file_name, File(file=f))
             self.audio_file = File(file=f)
-            
            
-        
+class Quizattempt(models.Model):
+    username = models.CharField(max_length=150)
+    quiz = models.IntegerField()
+    reponse = models.IntegerField()
         

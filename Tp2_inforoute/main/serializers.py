@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import CustomUser, SettingsAccount, Texts, Quizs, TextTts
+from .models import CustomUser, SettingsAccount, Texts, Quizs, TextTts, Quizattempt
 
 class LoginSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,8 +29,12 @@ class TextsSerializer(serializers.ModelSerializer):
         model = Texts
         fields = ("title", "phrase", "quizs")
 
-
 class AddtextSerializer(serializers.ModelSerializer):
     class Meta:
         model = TextTts
         fields = ("title", "audio_file")
+
+class QuizattemptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Quizattempt
+        fields = ("username", "quiz", "reponse")

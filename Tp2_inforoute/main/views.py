@@ -12,8 +12,8 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from drf_yasg.utils import swagger_auto_schema
 from gtts import gTTS
 
-from .models import CustomUser, Texts, TextTts, Quizs
-from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddtextSerializer
+from .models import CustomUser, Texts, TextTts, Quizs, Quizattempt
+from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddtextSerializer, QuizattemptSerializer
 
 
 @swagger_auto_schema(
@@ -148,10 +148,22 @@ def getTextAndQuiz(request):
         {"message": "Texts: {}  Quizs: {}".format(text_seri.data, quiz_seri.data)}, status=status.HTTP_200_OK
     )
 
+@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=QuizattemptSerializer)
+@api_view(["POST"])
+#@permission_classes([IsAuthenticated])
+def postAttempt(request):
+    username = request.data["username"]
+    quiz = request.data["quiz"]
+    reponse = request.data["reponse"]
+    attempt = Quizattempt(username=username, quiz=quiz, reponse=reponse)
+    attempt.save()
+
+    return Response(
+        {"message": "pas d'erreur less gooo"}, status=status.HTTP_200_OK
+    )
 
 
-
-@swagger_auto_schema(method="post", tags=["tts"], request_body=AddtextSerializer)
+@swagger_auto_schema(method="post", tags=["Texts/Quizs"], request_body=AddtextSerializer)
 @api_view(["POST"])
 def addText(request):
     title = request.data["title"]
