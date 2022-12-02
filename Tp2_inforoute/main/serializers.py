@@ -27,7 +27,7 @@ class TextsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Texts
-        fields = ("title", "quizs")
+        fields = ("title", "phrase", "quizs")
 
 
 class AddtextSerializer(serializers.ModelSerializer):

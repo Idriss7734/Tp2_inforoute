@@ -140,12 +140,12 @@ def getTextAndQuiz(request):
     textTitle = request.data["title"]
 
     text = Texts.objects.filter(title = textTitle)
-    text_serializer = TextsSerializer(text, many=True)
+    text_seri = TextsSerializer(text, many=True)
     quizs = Quizs.objects.filter(idText = text[:1]) #text[:1] = premier champ d'un element de type text, ce qui donne l'id
     quiz_seri = QuizsSerializer(quizs, many=True)
-    
+  
     return Response(
-        {"message": "Texts: {}  Quizs: {}".format(text_serializer.data, quiz_seri.data)}, status=status.HTTP_200_OK
+        {"message": "Texts: {}  Quizs: {}".format(text_seri.data, quiz_seri.data)}, status=status.HTTP_200_OK
     )
 
 
