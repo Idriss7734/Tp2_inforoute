@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth import authenticate
@@ -71,6 +71,12 @@ def login(request):
         )
 
 @swagger_auto_schema(
+    method="delete", tags=["Settings"], 
+    manual_parameters=[
+    openapi.Parameter('username',in_=openapi.IN_QUERY, description='username', type=openapi.TYPE_STRING), 
+    ]
+)
+@swagger_auto_schema(
     method="put", tags=["Settings"], 
     request_body=SettingsAccountSerializer,
     manual_parameters=[
@@ -131,23 +137,18 @@ def settings(request):
                 for user in SettingsAccounts:
                     if user.id == int(id):
                         account = user
-                print(birthday)
+
                 data = {'username':account.username, 'password':account.password, 'birthday': account.birthday}
-                print(data)
                 if username != None:
                     data['username'] = username
-                    print(data)
 
                 if old_password != None and  check_password(old_password, account.password):
                     password=make_password(new_password)
                     data['password'] = password
-                    print(data)
 
                 if birthday != None:
                     data['birthday'] = birthday
-                    print(data)
 
-                print(data)
                 SettingsAccount_serializer = SettingsAccountSerializer(account,data=data)
                 if not SettingsAccount_serializer.is_valid():
                     return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -182,6 +183,22 @@ def settings(request):
 
             SettingsAccount_serializer.save()
             return Response(status=status.HTTP_200_OK)
+    elif request.method == "DELETE":
+        if admin:
+            username = request.GET.get('username')
+            student = get_object_or_404(CustomUser, username=username)
+            
+            #user = CustomUser.objects.filter(username=username)
+            #student_data = CustomUser.objects.get(username=username).delete()
+            print(student)
+            student.delete()
+   
+
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    
+    
 
 @swagger_auto_schema( method="get", tags=["Authentication"])
 @api_view(["GET"])

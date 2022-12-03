@@ -14,7 +14,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-
+            migrations.CreateModel(
+                        name='Quizattempt',
+                        fields=[
+                            ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                            ('username', models.CharField(max_length=150)),
+                            ('quiz', models.IntegerField()),
+                            ('reponse', models.IntegerField()),
+                        ],
+                    ),
         migrations.CreateModel(
             name='Quizs',
             fields=[
