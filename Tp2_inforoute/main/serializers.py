@@ -17,7 +17,6 @@ class SettingsAccountSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ("username", "password", "birthday")
 
-
 class QuizsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quizs       

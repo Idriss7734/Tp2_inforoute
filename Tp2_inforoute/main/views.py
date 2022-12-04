@@ -4,12 +4,13 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.parsers import JSONParser 
+from rest_framework.generics import GenericAPIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -70,6 +71,19 @@ def login(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
+@swagger_auto_schema( method="get", tags=["Authentication"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]
+
+    invalidated_token = Token.objects.filter(key=token_key).first()
+    invalidated_token.delete()
+
+    return Response(
+        {"message": "Deconnexion effectuée avec succès !"}, status=status.HTTP_200_OK
+    )
+
 @swagger_auto_schema(
     method="delete", tags=["Settings"], 
     manual_parameters=[
@@ -96,21 +110,11 @@ def login(request):
 @authentication_classes((SessionAuthentication, TokenAuthentication, BasicAuthentication))
 def settings(request):
     
-    admin = True
     token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]
-    print(token_key)
-    user = Token.objects.filter(key="a23af3eff3a14f3610a2d28d8d2dd34f8e9c57e7").first()
-    #CustomUser = CustomUser.objects.filter(key="a23af3eff3a14f3610a2d28d8d2dd34f8e9c57e7").exists()
-    print(user)
-    #CustomUser = CustomUser.objects.get(username=username)
-
-    #if not CustomUser.objects.filter(auth_token=token_key).exists():
-    #    return Response(
-    #        {"message": "L'utilisateur n'existe pas !"},
-    #        status=status.HTTP_404_NOT_FOUND,
-    #    )
+    user = Token.objects.filter(key=token_key).first()
+    u = CustomUser.objects.get(username=request.user)
     if request.method == "GET":
-        if admin:
+        if u.is_superuser:
             SettingsAccount = CustomUser.objects.all()
             SettingsAccount_serializer = SettingsAccountSerializer(SettingsAccount, many=True)
             return Response(
@@ -125,7 +129,7 @@ def settings(request):
                 status=status.HTTP_200_OK,
             )
     elif request.method == "PUT":
-        if admin:
+        if u.is_superuser:
             try:
                 SettingsAccounts = CustomUser.objects.all()
                 id = request.GET.get('id')
@@ -184,35 +188,17 @@ def settings(request):
             SettingsAccount_serializer.save()
             return Response(status=status.HTTP_200_OK)
     elif request.method == "DELETE":
-        if admin:
+        if u.is_superuser:
             username = request.GET.get('username')
             student = get_object_or_404(CustomUser, username=username)
             
-            #user = CustomUser.objects.filter(username=username)
-            #student_data = CustomUser.objects.get(username=username).delete()
-            print(student)
+            if student.username == str(request.user):
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
             student.delete()
    
-
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    
-    
-
-@swagger_auto_schema( method="get", tags=["Authentication"])
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def logout(request):
-    token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]
-
-    invalidated_token = Token.objects.filter(key=token_key).first()
-    invalidated_token.delete()
-
-    return Response(
-        {"message": "Deconnexion effectuée avec succès !"}, status=status.HTTP_200_OK
-    )
-
 
 @swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=TextsSerializer)
 @api_view(["POST"])
@@ -276,3 +262,26 @@ def addText(request):
         ttsAdd.savef()
         #ttsAdd.save()
         
+@swagger_auto_schema( method="POST", tags=["Texts/Quizs"], request_body=AddtextSerializer)
+@api_view(["GET", "POST"])
+#@permission_classes([IsAuthenticated])
+def viewResult(request):
+
+    token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]
+    user = Token.objects.filter(key=token_key).first()
+    u = CustomUser.objects.get(username=request.user)
+   
+    if u.is_superuser:
+        QuizStats = Quizattempt.objects.all()
+        QuizStats_serializer = QuizattemptSerializer(QuizStats, many=True)
+        return Response(
+            QuizStats_serializer.data,
+            status=status.HTTP_200_OK,
+        )
+    else:
+        QuizStats = Quizattempt.objects.get(username=u.username)
+        QuizStats_serializer = QuizattemptSerializer(QuizStats)
+        return Response(
+            QuizStats_serializer.data,
+            status=status.HTTP_200_OK,
+        )

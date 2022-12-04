@@ -9,6 +9,7 @@ from django import forms
 
 class CustomUser(AbstractUser):
     birthday = models.DateField()
+    is_superuser = models.BooleanField(default=False)
 
 class SettingsAccount(models.Model):
     username = models.CharField(max_length=30)

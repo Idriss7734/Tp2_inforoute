@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
  
     'rest_framework',
+    
     'rest_framework.authtoken',
     'drf_yasg',
     "corsheaders",
@@ -151,6 +152,10 @@ AUTH_USER_MODEL = "main.customuser"  # new
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
          "Basic": {"type": "basic"},
-         "Bearer": {"type": "apiKey"},
+         'api_key': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization'
+        }
         }
 }
