@@ -14,8 +14,8 @@ from rest_framework.generics import GenericAPIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import CustomUser, Texts, TextTts, Quizs, Quizattempt
-from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddtextSerializer, QuizattemptSerializer
+from .models import CustomUser, Texts, TextTts, Quizs, Quizattempt, Phrases
+from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddTtsSerializer, QuizattemptSerializer, PhrasesSerializer, addTextSerializer, addQuiz, modifyTextSerializer, modifyPhraseSerializer, putPhraseSerializer, modifyQuizSerializer
 
 
 @swagger_auto_schema(
@@ -103,7 +103,6 @@ def logout(request):
 )
 @swagger_auto_schema(
     method="post", tags=["Settings"], request_body=SettingsAccountSerializer,
-
 )
 @api_view(["POST", "GET", "PUT", "DELETE"])
 @permission_classes([IsAuthenticated])
@@ -146,7 +145,7 @@ def settings(request):
                 if username != None:
                     data['username'] = username
 
-                if old_password != None and  check_password(old_password, account.password):
+                if old_password != None and check_password(old_password, account.password) and new_password != None:
                     password=make_password(new_password)
                     data['password'] = password
 
@@ -160,7 +159,7 @@ def settings(request):
                 SettingsAccount_serializer.save()
                 return Response(status=status.HTTP_200_OK)
             except:
-                return Response("The user id is invalide.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             SettingsAccounts = CustomUser.objects.get(auth_token=user)
             username = request.GET.get('username')
@@ -200,71 +199,371 @@ def settings(request):
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=TextsSerializer)
-@api_view(["POST"])
-#@permission_classes([IsAuthenticated])
-def text(request):
-    textTitle = request.data["title"]
-    text = Texts.objects.filter(title=textTitle).first()
-    
+@swagger_auto_schema( method="get", tags=["Texts/Quizs"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def getTexts(request):
+    texts = Texts.objects.all()
+    textseri = TextsSerializer(texts, many=True)
     return Response(
-        {"message": "Phrase: {}".format(text.phrase)}, status=status.HTTP_200_OK
+        {"message": "{}".format(textseri.data)}, status=status.HTTP_200_OK
     )
 
-@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=QuizsSerializer)
-@api_view(["POST"])
+@swagger_auto_schema( method="get", tags=["Texts/Quizs"])
+@api_view(["GET"])
 #@permission_classes([IsAuthenticated])
-def quiz(request):
-    text = request.data["idText"]
-    phrase = Quizs.objects.filter(idText=text).first()
-
+def getPhrases(request):
+    phrases = Phrases.objects.all()
+    phraseseri = PhrasesSerializer(phrases, many=True)
     return Response(
-        {"message": "Phrase: {}, Reponse1: {}, Reponse2: {}, Reponse3: {}, Reponse4: {}".format(phrase.phrase, phrase.reponse1, phrase.reponse2, phrase.reponse3, phrase.reponse4)}, status=status.HTTP_200_OK
+        {"message": "{}".format(phraseseri.data)}, status=status.HTTP_200_OK
     )
 
-@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=TextsSerializer)
-@api_view(["POST"])
-#@permission_classes([IsAuthenticated])
+@swagger_auto_schema( method="get", tags=["Texts/Quizs"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def getQuizs(request):
+    quizs = Quizs.objects.all()
+    quizseri = QuizsSerializer(quizs, many=True)
+    return Response(
+        {"message": "{}".format(quizseri.data)}, status=status.HTTP_200_OK
+    )
+
+@swagger_auto_schema( 
+    method="get", 
+    tags=["Texts/Quizs"], 
+    manual_parameters=[
+        openapi.Parameter('title',in_=openapi.IN_QUERY, description='title', type=openapi.TYPE_STRING), 
+    ]
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def getTextAndQuiz(request):
-    textTitle = request.data["title"]
-
+    textTitle = request.GET.get("title")
     text = Texts.objects.filter(title = textTitle)
     text_seri = TextsSerializer(text, many=True)
+    phrases = Phrases.objects.filter(idText=text[:1])#text[:1] = premier champ d'un element de type text, ce qui donne l'id
+    phrase_seri = PhrasesSerializer(phrases, many=True)
     quizs = Quizs.objects.filter(idText = text[:1]) #text[:1] = premier champ d'un element de type text, ce qui donne l'id
     quiz_seri = QuizsSerializer(quizs, many=True)
-  
-    return Response(
-        {"message": "Texts: {}  Quizs: {}".format(text_seri.data, quiz_seri.data)}, status=status.HTTP_200_OK
-    )
-
-@swagger_auto_schema( method="post", tags=["Texts/Quizs"], request_body=QuizattemptSerializer)
-@api_view(["POST"])
-#@permission_classes([IsAuthenticated])
-def postAttempt(request):
-    username = request.data["username"]
-    quiz = request.data["quiz"]
-    reponse = request.data["reponse"]
-    attempt = Quizattempt(username=username, quiz=quiz, reponse=reponse)
-    attempt.save()
 
     return Response(
-        {"message": "pas d'erreur less gooo"}, status=status.HTTP_200_OK
+        {"message": "-Title: {} -Phrases: {} -Quizs: {}".format(text_seri.data, phrase_seri.data, quiz_seri.data)}, status=status.HTTP_200_OK
     )
 
-
-@swagger_auto_schema(method="post", tags=["Texts/Quizs"], request_body=AddtextSerializer)
+@swagger_auto_schema( 
+    method="post", 
+    tags=["Texts/Quizs"], 
+    request_body=addTextSerializer,
+)
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def addText(request):
+
+    
+    u = CustomUser.objects.get(username=request.user)
+    
+    if u.is_superuser:
+        textTitle = request.data["title"]
+        text = Texts(title=textTitle)
+        text.save()
+        return Response(
+            {"message": "Success"}, status=status.HTTP_200_OK
+        )
+    
+    return Response(
+        {"message": "Error: Not admin"}, status=status.HTTP_200_OK
+    )
+
+@swagger_auto_schema( 
+    method="post", 
+    tags=["Texts/Quizs"], 
+    request_body=PhrasesSerializer,
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def addPhrase(request):
+    u = CustomUser.objects.get(username=request.user)
+    
+    if u.is_superuser:
+        idText = request.data["idText"]
+        phraseInput = request.data["phrase"]
+        phrase = Phrases(idText=idText, phrase=phraseInput)
+        phrase.save()
+        return Response(
+            {"message": "Success"}, status=status.HTTP_200_OK
+        )
+    
+    return Response(
+        {"message": "Error: Not admin"}, status=status.HTTP_200_OK
+    )
+
+@swagger_auto_schema( 
+    method="post", 
+    tags=["Texts/Quizs"], 
+    request_body=addQuiz,
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def addQuiz(request):
+    u = CustomUser.objects.get(username=request.user)
+
+    if u.is_superuser:
+        idText = request.data["idText"]
+        question = request.data["question"]
+        reponse1 = request.data["reponse1"]
+        reponse2 = request.data["reponse2"]
+        reponse3 = request.data["reponse3"]
+        reponse4 = request.data["reponse4"]
+
+        quiz = Quizs(idText=idText, question=question, reponse1=reponse1, reponse2=reponse2, reponse3=reponse3, reponse4=reponse4)
+        quiz.save()
+        return Response(
+            {"message": "Success"}, status=status.HTTP_200_OK
+        )
+    
+    return Response(
+        {"message": "Error: Not admin"}, status=status.HTTP_200_OK
+    )
+
+@swagger_auto_schema( 
+    method="put", 
+    tags=["Texts/Quizs"], 
+    request_body=modifyTextSerializer,
+    manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
+        openapi.Parameter('title',in_=openapi.IN_QUERY, description='title', type=openapi.TYPE_STRING),
+    ]
+)
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def modifyText(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser:
+        try:
+            if request.GET.get('id') == None:
+                id = request.data['id']
+            else:
+                id = request.GET.get('id')
+
+            title = request.GET.get('title')
+            texts = Texts.objects.all()
+
+            for t in texts:
+                if t.id == int(id):
+                    text = t  
+
+            data = {'title': text.title}
+
+            if title != None:
+                data['title'] = title
+
+            text_seri = addTextSerializer(text, data=data)
+            if not text_seri.is_valid():
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            text_seri.save()
+            return Response(status=status.HTTP_200_OK)
+        except:
+            return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response("The user not an admin",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@swagger_auto_schema( method="put", tags=["Texts/Quizs"], request_body=modifyPhraseSerializer,
+    manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
+        openapi.Parameter('phrase',in_=openapi.IN_QUERY, description='phrase', type=openapi.TYPE_STRING),
+    ]
+)
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def modifyPhrase(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser:
+        try:
+            if request.GET.get('id') == None:
+                id = request.data['id']
+            else:
+                id = request.GET.get('id')
+
+            newPhrase = request.GET.get('phrase')
+            phrases = Phrases.objects.all()
+
+            for p in phrases:
+                if p.id == int(id):
+                    phrase = p  
+
+            data = {'phrase': phrase.phrase}
+
+            if newPhrase != None:
+                data['phrase'] = newPhrase
+
+            phrase_seri = putPhraseSerializer(phrase, data=data)
+            if not phrase_seri.is_valid():
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            phrase_seri.save()
+            return Response(status=status.HTTP_200_OK)
+        except:
+            return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response("The user not an admin",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@swagger_auto_schema( method="put", tags=["Texts/Quizs"], request_body=modifyQuizSerializer,
+    manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
+        openapi.Parameter('question',in_=openapi.IN_QUERY, description='question', type=openapi.TYPE_STRING),
+        openapi.Parameter('reponse1',in_=openapi.IN_QUERY, description='reponse1', type=openapi.TYPE_STRING),
+        openapi.Parameter('reponse2',in_=openapi.IN_QUERY, description='reponse2', type=openapi.TYPE_STRING),
+        openapi.Parameter('reponse3',in_=openapi.IN_QUERY, description='reponse3', type=openapi.TYPE_STRING),
+        openapi.Parameter('reponse4',in_=openapi.IN_QUERY, description='reponse4', type=openapi.TYPE_STRING),
+    ]
+)
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def modifyQuiz(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser:
+        try:
+            if request.GET.get('id') == None:
+                id = request.data['id']
+            else:
+                id = request.GET.get('id') 
+
+            question = request.GET.get('question') 
+            reponse1 = request.GET.get('reponse1') 
+            reponse2 = request.GET.get('reponse2') 
+            reponse3 = request.GET.get('reponse3') 
+            reponse4 = request.GET.get('reponse4') 
+
+            quizs = Quizs.objects.all()
+
+            for q in quizs:
+                if q.id == int(id):
+                    quiz = q  
+
+            data = {'question': quiz.question, 'reponse1': quiz.reponse1, 'reponse2': quiz.reponse2, 'reponse3': quiz.reponse3, 'reponse4': quiz.reponse4}
+
+            if question != None:
+                data['question'] = question
+
+            if reponse1 != None:
+                data['reponse1'] = reponse1
+            
+            if reponse2 != None:
+                data['reponse2'] = reponse2
+
+            if reponse3 != None:
+                data['reponse3'] = reponse3
+
+            if reponse4 != None:
+                data['reponse4'] = reponse4
+
+            quiz_seri = QuizsSerializer(quiz, data=data)
+            if not quiz_seri.is_valid():
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            quiz_seri.save()
+            return Response(status=status.HTTP_200_OK)
+        except:
+            return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response("The user not an admin",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@swagger_auto_schema( 
+    method="delete", 
+    tags=["Texts/Quizs"], 
+    manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
+        openapi.Parameter('title',in_=openapi.IN_QUERY, description='title', type=openapi.TYPE_STRING),
+    ]
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deleteText(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser: 
+        id = request.GET.get('id')
+        title = request.GET.get('title')
+        if id != None:
+            texte = get_object_or_404(Texts, id=id)
+        elif title != None:
+            texte = get_object_or_404(Texts, title=title)
+        
+        texte.delete()
+
+        return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema( 
+    method="delete", 
+    tags=["Texts/Quizs"], 
+    manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
+    ]
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deletePhrase(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser: 
+        id = request.GET.get('id')
+        phrase = get_object_or_404(Phrases, id=id)
+        
+        phrase.delete()
+
+        return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema( 
+    method="delete", 
+    tags=["Texts/Quizs"], 
+    manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
+    ]
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deleteQuiz(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser: 
+        id = request.GET.get('id')
+        quiz = get_object_or_404(Quizs, id=id)
+        
+        quiz.delete()
+
+        return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema( 
+    method="post", 
+    tags=["Texts/Quizs"], 
+    request_body=QuizattemptSerializer,
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def postAttempt(request):
+    quiz = request.data["quiz"]
+    reponse = request.data["answer"]
+    success = request.data["success"]
+    user = request.user
+    attempt = Quizattempt(username=user, quiz=quiz, answer=reponse, success=success)
+    attempt.save()
+    
+    return Response(
+        {"message": "Success"}, status=status.HTTP_200_OK
+    )
+
+
+@swagger_auto_schema(method="post", tags=["Texts/Quizs"], request_body=AddTtsSerializer)
+@api_view(["POST"])
+def addTts(request):
     title = request.data["title"]
     audio_file = request.data["text"]
     if request.method == 'POST':
         ttsAdd = TextTts(title:=title, audio_file:=audio_file)
         ttsAdd.savef()
-        #ttsAdd.save()
         
-@swagger_auto_schema( method="POST", tags=["Texts/Quizs"], request_body=AddtextSerializer)
-@api_view(["GET", "POST"])
-#@permission_classes([IsAuthenticated])
+@swagger_auto_schema( method="GET", tags=["Texts/Quizs"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def viewResult(request):
 
     token_key = request.META["HTTP_AUTHORIZATION"].split(" ")[1]

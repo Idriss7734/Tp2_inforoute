@@ -18,16 +18,22 @@ class SettingsAccount(models.Model):
     birthday = models.DateField()
 
 class Texts(models.Model):
-    title = models.CharField(max_length=30)
-    phrase = models.CharField(max_length=150)
+    id = models.IntegerField(primary_key=True)
+    title = models.CharField(max_length=255)
 
 class Quizs(models.Model):
+    id = models.IntegerField(primary_key=True)
     idText= models.IntegerField()
-    phrase = models.CharField(max_length=150)
+    question = models.CharField(max_length=150)
     reponse1 = models.CharField(max_length=150)
     reponse2 = models.CharField(max_length=150)
     reponse3 = models.CharField(max_length=150)
     reponse4 = models.CharField(max_length=150)
+
+class Phrases(models.Model):
+    id = models.IntegerField(primary_key=True)
+    idText = models.IntegerField()
+    phrase = models.CharField(max_length=255)
 
 class TextTts(models.Model):
     title = models.CharField(max_length=255)
@@ -44,5 +50,6 @@ class TextTts(models.Model):
 class Quizattempt(models.Model):
     username = models.CharField(max_length=150)
     quiz = models.IntegerField()
-    reponse = models.IntegerField()
+    answer = models.IntegerField()
+    success = models.IntegerField()
         
