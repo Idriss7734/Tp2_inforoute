@@ -46,10 +46,22 @@ class TextTts(models.Model):
             file_name = '{}.mp3'.format(self.title)
             self.audio_file.save(file_name, File(file=f))
             self.audio_file = File(file=f)
-           
+
 class Quizattempt(models.Model):
     username = models.CharField(max_length=150)
     quiz = models.IntegerField()
     answer = models.IntegerField()
     success = models.IntegerField()
+
+class ImageWords(models.Model):
+    id = models.IntegerField(primary_key=True)
+    word = models.TextField()
+    path = models.TextField()
+
+class ImageList(models.Model):
+    id = models.IntegerField(primary_key=True)
+    paths = models.CharField(max_length=255)
+    idT = models.IntegerField()
+    idP = models.IntegerField()
+    idQ = models.IntegerField()
         

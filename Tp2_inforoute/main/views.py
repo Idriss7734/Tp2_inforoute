@@ -14,8 +14,8 @@ from rest_framework.generics import GenericAPIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import CustomUser, Texts, TextTts, Quizs, Quizattempt, Phrases
-from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddTtsSerializer, QuizattemptSerializer, PhrasesSerializer, addTextSerializer, addQuiz, modifyTextSerializer, modifyPhraseSerializer, putPhraseSerializer, modifyQuizSerializer
+from .models import CustomUser, Texts, TextTts, Quizs, Quizattempt, Phrases, ImageWords, ImageList
+from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddTtsSerializer, QuizattemptSerializer, PhrasesSerializer, addTextSerializer, addQuiz, modifyTextSerializer, modifyPhraseSerializer, putPhraseSerializer, modifyQuizSerializer, ImageWordsSerializer
 
 
 @swagger_auto_schema(
@@ -211,7 +211,7 @@ def getTexts(request):
 
 @swagger_auto_schema( method="get", tags=["Texts/Quizs"])
 @api_view(["GET"])
-#@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def getPhrases(request):
     phrases = Phrases.objects.all()
     phraseseri = PhrasesSerializer(phrases, many=True)
@@ -230,7 +230,7 @@ def getQuizs(request):
     )
 
 @swagger_auto_schema( 
-    method="get", 
+    method="get",
     tags=["Texts/Quizs"], 
     manual_parameters=[
         openapi.Parameter('title',in_=openapi.IN_QUERY, description='title', type=openapi.TYPE_STRING), 
@@ -259,14 +259,18 @@ def getTextAndQuiz(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def addText(request):
-
-    
     u = CustomUser.objects.get(username=request.user)
     
     if u.is_superuser:
         textTitle = request.data["title"]
+        
+        
         text = Texts(title=textTitle)
         text.save()
+
+        id = Texts.objects.filter(title=textTitle).first().id
+        linkImages(textTitle, "t", id)
+
         return Response(
             {"message": "Success"}, status=status.HTTP_200_OK
         )
@@ -551,6 +555,59 @@ def postAttempt(request):
         {"message": "Success"}, status=status.HTTP_200_OK
     )
 
+@swagger_auto_schema( method="get", tags=["Images"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def getImageWords(request):
+    imageWords = ImageWords.objects.all()
+    imageWords_seri = ImageWordsSerializer(imageWords, many=True)
+    return Response(
+        {"message": "{}".format(imageWords_seri.data)}, status=status.HTTP_200_OK
+    )
+
+@swagger_auto_schema( 
+    method="post", 
+    tags=["Images"], 
+    request_body=ImageWordsSerializer,
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def addImageWord(request):
+    u = CustomUser.objects.get(username=request.user)
+    
+    if u.is_superuser:
+        word = request.data["word"]
+        path = "./ressource/" + request.data["path"]
+
+        imageWord = ImageWords(word=word, path=path)
+        imageWord.save()
+        return Response(
+            {"message": "Success"}, status=status.HTTP_200_OK
+        )
+    
+    return Response(
+        {"message": "Error: Not admin"}, status=status.HTTP_400_BAD_REQUEST
+    )
+
+@swagger_auto_schema( 
+    method="delete", 
+    tags=["Images"], 
+    manual_parameters=[
+        openapi.Parameter('word',in_=openapi.IN_QUERY, description='word', type=openapi.TYPE_STRING),  
+    ]
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deleteImageWord(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser: 
+        wordInput = request.GET.get('word')
+        word = get_object_or_404(ImageWords, word=wordInput)
+        
+        word.delete()
+
+        return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(method="post", tags=["Texts/Quizs"], request_body=AddTtsSerializer)
 @api_view(["POST"])
@@ -584,3 +641,27 @@ def viewResult(request):
             QuizStats_serializer.data,
             status=status.HTTP_200_OK,
         )
+
+
+def linkImages(string, type, id):
+    words = ImageWords.objects.all()
+    string = string.lower()
+    string = string.split()
+    dict = {"words": [], "paths": []}
+
+    for s in string:
+        for w in words:
+            if s == w.word:
+                dict["words"].append(w.word)
+                dict["paths"].append(w.path)
+
+    match type:
+        case "t": #title
+            images = ImageList(paths = dict, idT=id)
+        case "p":#phrase
+            images = ImageList(paths = dict, idP=id)
+        case "q":#quiz
+            images = ImageList(paths = dict, idQ=id)
+    
+    images.save()
+    
