@@ -64,4 +64,5 @@ class ImageList(models.Model):
     idT = models.IntegerField()
     idP = models.IntegerField()
     idQ = models.IntegerField()
+    numR= models.IntegerField()
         

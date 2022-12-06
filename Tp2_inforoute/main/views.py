@@ -237,18 +237,40 @@ def getQuizs(request):
     ]
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def getTextAndQuiz(request):
     textTitle = request.GET.get("title")
-    text = Texts.objects.filter(title = textTitle)
+    text = Texts.objects.filter(title = textTitle).first()
     text_seri = TextsSerializer(text, many=True)
-    phrases = Phrases.objects.filter(idText=text[:1])#text[:1] = premier champ d'un element de type text, ce qui donne l'id
+    phrases = Phrases.objects.filter(idText=text.id)#text[:1] = premier champ d'un element de type text, ce qui donne l'id
     phrase_seri = PhrasesSerializer(phrases, many=True)
-    quizs = Quizs.objects.filter(idText = text[:1]) #text[:1] = premier champ d'un element de type text, ce qui donne l'id
+    quizs = Quizs.objects.filter(idText = text.id) #text[:1] = premier champ d'un element de type text, ce qui donne l'id
     quiz_seri = QuizsSerializer(quizs, many=True)
 
+    titleImages = ImageList.objects.filter(idT = text.id).first().paths
+    
+    dictT = {"title": [text.title], "paths": [titleImages]}
+
+    dictP = {"phrase": [], "paths": []}
+    for p in phrases:
+        dictP["phrase"].append(p.phrase)
+        dictP["paths"].append(ImageList.objects.filter(idP = p.id).first().paths)
+    
+    dictQ = {"question": [], "qPaths": [], "r1": [], "r1Paths": [], "r2": [], "r2Paths": [], "r3": [], "r3Paths": [], "r4": [], "r4Paths": []}
+    for q in quizs:
+        dictQ["question"].append(q.question)
+        dictQ["qPaths"].append(ImageList.objects.filter(idQ = q.id, numR=None).first().paths)
+        dictQ["r1"].append(q.reponse1)
+        dictQ["r1Paths"].append(ImageList.objects.filter(idQ = q.id, numR=1).first().paths)
+        dictQ["r2"].append(q.reponse2)
+        dictQ["r2Paths"].append(ImageList.objects.filter(idQ = q.id, numR=2).first().paths)
+        dictQ["r3"].append(q.reponse3)
+        dictQ["r3Paths"].append(ImageList.objects.filter(idQ = q.id, numR=3).first().paths)
+        dictQ["r4"].append(q.reponse4)
+        dictQ["r4Paths"].append(ImageList.objects.filter(idQ = q.id, numR=4).first().paths)
+
     return Response(
-        {"message": "-Title: {} -Phrases: {} -Quizs: {}".format(text_seri.data, phrase_seri.data, quiz_seri.data)}, status=status.HTTP_200_OK
+        {"-Title": "{}".format(dictT), "-Phrases": "{}".format(dictP), "-Quizs": "{}".format(dictQ)}, status=status.HTTP_200_OK
     )
 
 @swagger_auto_schema( 
@@ -269,7 +291,7 @@ def addText(request):
         text.save()
 
         id = Texts.objects.filter(title=textTitle).first().id
-        linkImages(textTitle, "t", id)
+        linkImages(textTitle, "t", id, None)
 
         return Response(
             {"message": "Success"}, status=status.HTTP_200_OK
@@ -294,6 +316,10 @@ def addPhrase(request):
         phraseInput = request.data["phrase"]
         phrase = Phrases(idText=idText, phrase=phraseInput)
         phrase.save()
+
+        id = Phrases.objects.filter(idText=idText, phrase=phraseInput).first().id
+        linkImages(phraseInput, "p", id, None)
+
         return Response(
             {"message": "Success"}, status=status.HTTP_200_OK
         )
@@ -322,6 +348,19 @@ def addQuiz(request):
 
         quiz = Quizs(idText=idText, question=question, reponse1=reponse1, reponse2=reponse2, reponse3=reponse3, reponse4=reponse4)
         quiz.save()
+
+        id = Quizs.objects.filter(idText=idText, question=question, reponse1=reponse1, reponse2=reponse2, reponse3=reponse3, reponse4=reponse4).first().id
+        
+        #question
+        linkImages(question, "q", id, None)
+        #answers
+        linkImages(reponse1, "r", id, 1)
+        linkImages(reponse2, "r", id, 2)
+        linkImages(reponse3, "r", id, 3)
+        linkImages(reponse4, "r", id, 4)
+        
+
+
         return Response(
             {"message": "Success"}, status=status.HTTP_200_OK
         )
@@ -333,7 +372,6 @@ def addQuiz(request):
 @swagger_auto_schema( 
     method="put", 
     tags=["Texts/Quizs"], 
-    request_body=modifyTextSerializer,
     manual_parameters=[
         openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
         openapi.Parameter('title',in_=openapi.IN_QUERY, description='title', type=openapi.TYPE_STRING),
@@ -345,10 +383,7 @@ def modifyText(request):
     u = CustomUser.objects.get(username=request.user)
     if u.is_superuser:
         try:
-            if request.GET.get('id') == None:
-                id = request.data['id']
-            else:
-                id = request.GET.get('id')
+            id = request.GET.get('id')
 
             title = request.GET.get('title')
             texts = Texts.objects.all()
@@ -364,15 +399,19 @@ def modifyText(request):
 
             text_seri = addTextSerializer(text, data=data)
             if not text_seri.is_valid():
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response("data is invalid", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            linkToRemove = ImageList.objects.filter(idT = id).first()
+            removeLink(linkToRemove.id)
+            linkImages(title, "t", id, None)
 
             text_seri.save()
             return Response(status=status.HTTP_200_OK)
         except:
-            return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return Response("The user not an admin",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response("The user not an admin", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@swagger_auto_schema( method="put", tags=["Texts/Quizs"], request_body=modifyPhraseSerializer,
+@swagger_auto_schema( method="put", tags=["Texts/Quizs"],
     manual_parameters=[
         openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
         openapi.Parameter('phrase',in_=openapi.IN_QUERY, description='phrase', type=openapi.TYPE_STRING),
@@ -384,10 +423,7 @@ def modifyPhrase(request):
     u = CustomUser.objects.get(username=request.user)
     if u.is_superuser:
         try:
-            if request.GET.get('id') == None:
-                id = request.data['id']
-            else:
-                id = request.GET.get('id')
+            id = request.GET.get('id')
 
             newPhrase = request.GET.get('phrase')
             phrases = Phrases.objects.all()
@@ -405,13 +441,17 @@ def modifyPhrase(request):
             if not phrase_seri.is_valid():
                 return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+            linkToRemove = ImageList.objects.filter(idP = id).first()
+            removeLink(linkToRemove.id)
+            linkImages(newPhrase, "p", id, None)
+
             phrase_seri.save()
             return Response(status=status.HTTP_200_OK)
         except:
-            return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response("invalid data",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response("The user not an admin",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@swagger_auto_schema( method="put", tags=["Texts/Quizs"], request_body=modifyQuizSerializer,
+@swagger_auto_schema( method="put", tags=["Texts/Quizs"],
     manual_parameters=[
         openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_INTEGER),  
         openapi.Parameter('question',in_=openapi.IN_QUERY, description='question', type=openapi.TYPE_STRING),
@@ -427,10 +467,12 @@ def modifyQuiz(request):
     u = CustomUser.objects.get(username=request.user)
     if u.is_superuser:
         try:
-            if request.GET.get('id') == None:
-                id = request.data['id']
-            else:
-                id = request.GET.get('id') 
+            qu = False
+            r1 = False
+            r2 = False
+            r3 = False
+            r4 = False
+            id = request.GET.get('id') 
 
             question = request.GET.get('question') 
             reponse1 = request.GET.get('reponse1') 
@@ -448,22 +490,48 @@ def modifyQuiz(request):
 
             if question != None:
                 data['question'] = question
+                qu = True
 
             if reponse1 != None:
                 data['reponse1'] = reponse1
+                r1 = True
             
             if reponse2 != None:
                 data['reponse2'] = reponse2
+                r2 = True
 
             if reponse3 != None:
                 data['reponse3'] = reponse3
+                r3 = True
 
             if reponse4 != None:
                 data['reponse4'] = reponse4
+                r4 = True
 
             quiz_seri = QuizsSerializer(quiz, data=data)
             if not quiz_seri.is_valid():
                 return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            if qu:
+                linkToRemove = ImageList.objects.filter(idQ = id, numR=None).first()
+                removeLink(linkToRemove.id)
+                linkImages(question, "q", id, None)
+            if r1:
+                linkToRemove = ImageList.objects.filter(idQ = id, numR=1).first()
+                removeLink(linkToRemove.id)
+                linkImages(reponse1, "r", id, 1)
+            if r2:
+                linkToRemove = ImageList.objects.filter(idQ = id, numR=2).first()
+                removeLink(linkToRemove.id)
+                linkImages(reponse2, "r", id, 2)
+            if r3:
+                linkToRemove = ImageList.objects.filter(idQ = id, numR=3).first()
+                removeLink(linkToRemove.id)
+                linkImages(reponse3, "r", id, 3)
+            if r4:
+                linkToRemove = ImageList.objects.filter(idQ = id, numR=4).first()
+                removeLink(linkToRemove.id)
+                linkImages(reponse4, "r", id, 4)
 
             quiz_seri.save()
             return Response(status=status.HTTP_200_OK)
@@ -643,7 +711,9 @@ def viewResult(request):
         )
 
 
-def linkImages(string, type, id):
+def linkImages(string, type, id, numR):
+    string = string.replace(".", "")
+    string = string.replace("?", "")
     words = ImageWords.objects.all()
     string = string.lower()
     string = string.split()
@@ -662,6 +732,12 @@ def linkImages(string, type, id):
             images = ImageList(paths = dict, idP=id)
         case "q":#quiz
             images = ImageList(paths = dict, idQ=id)
-    
+        case "r":#reponse
+            images = ImageList(paths = dict, idQ=id, numR=numR)
+
     images.save()
-    
+
+
+def removeLink(id):
+    link = get_object_or_404(ImageList, id=id)
+    link.delete()

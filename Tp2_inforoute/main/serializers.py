@@ -43,7 +43,7 @@ class TextsSerializer(serializers.ModelSerializer):
 class addTextSerializer(serializers.ModelSerializer):
     class Meta:
         model = Texts
-        fields = ("title", "idImagesT")
+        fields = ("title",)
 
 class modifyTextSerializer(serializers.ModelSerializer):
     class Meta:
