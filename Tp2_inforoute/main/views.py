@@ -14,8 +14,8 @@ from rest_framework.generics import GenericAPIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from .models import CustomUser, Texts, TextTts, Quizs, Quizattempt, Phrases, ImageWords, ImageList
-from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddTtsSerializer, QuizattemptSerializer, PhrasesSerializer, addTextSerializer, addQuiz, modifyTextSerializer, modifyPhraseSerializer, putPhraseSerializer, modifyQuizSerializer, ImageWordsSerializer
+from .models import CustomUser, Texts, Tts, Quizs, Quizattempt, Phrases, ImageWords, ImageList
+from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddTtsSerializer, QuizattemptSerializer, PhrasesSerializer, addTextSerializer, addQuizSerializer, modifyTextSerializer, modifyPhraseSerializer, putPhraseSerializer, modifyQuizSerializer, ImageWordsSerializer
 
 
 @swagger_auto_schema(
@@ -237,7 +237,7 @@ def getQuizs(request):
     ]
 )
 @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def getTextAndQuiz(request):
     textTitle = request.GET.get("title")
     text = Texts.objects.filter(title = textTitle).first()
@@ -270,7 +270,7 @@ def getTextAndQuiz(request):
         dictQ["r4Paths"].append(ImageList.objects.filter(idQ = q.id, numR=4).first().paths)
 
     return Response(
-        {"-Title": "{}".format(dictT), "-Phrases": "{}".format(dictP), "-Quizs": "{}".format(dictQ)}, status=status.HTTP_200_OK
+        {"-Title": dictT, "-Phrases": dictP, "-Quizs": dictQ}, status=status.HTTP_200_OK
     )
 
 @swagger_auto_schema( 
@@ -286,8 +286,9 @@ def addText(request):
     if u.is_superuser:
         textTitle = request.data["title"]
         
-        
-        text = Texts(title=textTitle)
+        id = createAudio(textTitle)
+
+        text = Texts(title=textTitle, idAudio = id)
         text.save()
 
         id = Texts.objects.filter(title=textTitle).first().id
@@ -314,7 +315,10 @@ def addPhrase(request):
     if u.is_superuser:
         idText = request.data["idText"]
         phraseInput = request.data["phrase"]
-        phrase = Phrases(idText=idText, phrase=phraseInput)
+
+        id = createAudio(phraseInput)
+
+        phrase = Phrases(idText=idText, phrase=phraseInput, idAudio=id)
         phrase.save()
 
         id = Phrases.objects.filter(idText=idText, phrase=phraseInput).first().id
@@ -331,7 +335,7 @@ def addPhrase(request):
 @swagger_auto_schema( 
     method="post", 
     tags=["Texts/Quizs"], 
-    request_body=addQuiz,
+    request_body=addQuizSerializer,
 )
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -346,7 +350,14 @@ def addQuiz(request):
         reponse3 = request.data["reponse3"]
         reponse4 = request.data["reponse4"]
 
-        quiz = Quizs(idText=idText, question=question, reponse1=reponse1, reponse2=reponse2, reponse3=reponse3, reponse4=reponse4)
+        idAudioQ = createAudio(question)
+        idAudioR1 = createAudio(reponse1)
+        idAudioR2 = createAudio(reponse2)
+        idAudioR3 = createAudio(reponse3)
+        idAudioR4 = createAudio(reponse4)
+
+
+        quiz = Quizs(idText=idText, question=question, reponse1=reponse1, reponse2=reponse2, reponse3=reponse3, reponse4=reponse4, idAudioQ=idAudioQ, idAudioR1=idAudioR1, idAudioR2=idAudioR2, idAudioR3=idAudioR3, idAudioR4=idAudioR4)
         quiz.save()
 
         id = Quizs.objects.filter(idText=idText, question=question, reponse1=reponse1, reponse2=reponse2, reponse3=reponse3, reponse4=reponse4).first().id
@@ -392,10 +403,13 @@ def modifyText(request):
                 if t.id == int(id):
                     text = t  
 
-            data = {'title': text.title}
+            data = {'title': text.title, 'idAudio': text.idAudio}
 
             if title != None:
                 data['title'] = title
+
+            idAudio = createAudio(title)
+            data['idAudio'] = idAudio
 
             text_seri = addTextSerializer(text, data=data)
             if not text_seri.is_valid():
@@ -432,14 +446,17 @@ def modifyPhrase(request):
                 if p.id == int(id):
                     phrase = p  
 
-            data = {'phrase': phrase.phrase}
+            data = {'phrase': phrase.phrase, 'idAudio': phrase.idAudio}
 
             if newPhrase != None:
                 data['phrase'] = newPhrase
 
+            idAudio = createAudio(newPhrase)
+            data['idAudio'] = idAudio
+
             phrase_seri = putPhraseSerializer(phrase, data=data)
             if not phrase_seri.is_valid():
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"message": "invalid data in serializer"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             linkToRemove = ImageList.objects.filter(idP = id).first()
             removeLink(linkToRemove.id)
@@ -677,14 +694,38 @@ def deleteImageWord(request):
         return Response(status=status.HTTP_200_OK)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-@swagger_auto_schema(method="post", tags=["Texts/Quizs"], request_body=AddTtsSerializer)
+@swagger_auto_schema(method="post", tags=["TTS"], request_body=AddTtsSerializer)
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def addTts(request):
-    title = request.data["title"]
-    audio_file = request.data["text"]
-    if request.method == 'POST':
-        ttsAdd = TextTts(title:=title, audio_file:=audio_file)
-        ttsAdd.savef()
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser:
+        fileName = request.data["fileName"]
+        text = request.data["text"]
+        if createAudio(fileName, text):
+            return Response(status=status.HTTP_200_OK)
+        else:
+            Response({"message": "file already exists"},status=status.HTTP_400_BAD_REQUEST)        
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema(method="delete", tags=["TTS"], 
+    manual_parameters=[
+        openapi.Parameter('id',in_=openapi.IN_QUERY, description='id', type=openapi.TYPE_STRING),  
+    ]
+)
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def deleteTts(request):
+    u = CustomUser.objects.get(username=request.user)
+    if u.is_superuser: 
+        id = request.GET.get("id")
+        file = get_object_or_404(Tts, id=id)
+        
+        file.delete()
+        
+        return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+    
         
 @swagger_auto_schema( method="GET", tags=["Texts/Quizs"])
 @api_view(["GET"])
@@ -711,6 +752,17 @@ def viewResult(request):
         )
 
 
+def createAudio(fileName):
+    if not Tts.objects.filter(fileName = fileName).exists():
+        file = Tts(fileName = fileName, text = fileName, path = "./audio/{}.mp3".format(fileName))
+        file.save()
+        file.saveFile()
+        id = Tts.objects.filter(fileName = fileName).first().id
+        return id
+    else:
+        return Tts.objects.filter(fileName = fileName).first().id
+    
+
 def linkImages(string, type, id, numR):
     string = string.replace(".", "")
     string = string.replace("?", "")
@@ -736,7 +788,6 @@ def linkImages(string, type, id, numR):
             images = ImageList(paths = dict, idQ=id, numR=numR)
 
     images.save()
-
 
 def removeLink(id):
     link = get_object_or_404(ImageList, id=id)

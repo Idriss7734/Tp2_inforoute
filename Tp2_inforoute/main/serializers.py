@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import CustomUser, SettingsAccount, Texts, Quizs, TextTts, Quizattempt, Phrases, ImageWords
+from .models import CustomUser, Texts, Quizs, Tts, Quizattempt, Phrases, ImageWords
 
 class LoginSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,7 +27,7 @@ class QuizsSerializer(serializers.ModelSerializer):
         model = Quizs       
         fields = ("question", "reponse1", "reponse2", "reponse3", "reponse4")
        
-class addQuiz(serializers.ModelSerializer):
+class addQuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quizs       
         fields = ("idText", "question", "reponse1", "reponse2", "reponse3", "reponse4")
@@ -43,7 +43,7 @@ class TextsSerializer(serializers.ModelSerializer):
 class addTextSerializer(serializers.ModelSerializer):
     class Meta:
         model = Texts
-        fields = ("title",)
+        fields = ("title", "idAudio")
 
 class modifyTextSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,7 +58,7 @@ class modifyPhraseSerializer(serializers.ModelSerializer):
 class putPhraseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Phrases
-        fields = ("phrase",)
+        fields = ("phrase", "idAudio")
 
 class modifyQuizSerializer(serializers.ModelSerializer):
     class Meta:
@@ -67,8 +67,8 @@ class modifyQuizSerializer(serializers.ModelSerializer):
 
 class AddTtsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TextTts
-        fields = ("title", "audio_file")
+        model = Tts
+        fields = ("fileName", "text")
 
 class QuizattemptSerializer(serializers.ModelSerializer):
     class Meta:

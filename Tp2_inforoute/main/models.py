@@ -11,15 +11,10 @@ class CustomUser(AbstractUser):
     birthday = models.DateField()
     is_superuser = models.BooleanField(default=False)
 
-class SettingsAccount(models.Model):
-    username = models.CharField(max_length=30)
-    old_password = models.CharField(max_length=30)
-    new_password = models.CharField(max_length=30)
-    birthday = models.DateField()
-
 class Texts(models.Model):
     id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
+    idAudio = models.IntegerField()
 
 class Quizs(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -29,23 +24,28 @@ class Quizs(models.Model):
     reponse2 = models.CharField(max_length=150)
     reponse3 = models.CharField(max_length=150)
     reponse4 = models.CharField(max_length=150)
+    idAudioQ = models.IntegerField()
+    idAudioR1= models.IntegerField()
+    idAudioR2= models.IntegerField()
+    idAudioR3= models.IntegerField()
+    idAudioR4= models.IntegerField()
 
 class Phrases(models.Model):
     id = models.IntegerField(primary_key=True)
     idText = models.IntegerField()
     phrase = models.CharField(max_length=255)
+    idAudio= models.IntegerField()
 
-class TextTts(models.Model):
-    title = models.CharField(max_length=255)
-    audio_file = models.FileField(upload_to='audio/')
+class Tts(models.Model):
+    id =  models.IntegerField(primary_key=True)
+    fileName = models.CharField(max_length=255)
+    text = models.CharField(max_length=255)
+    path = models.CharField(max_length=255)
 
-    def savef(self, *args, **kwargs):
-        audio_file = gTTS(title=self.title, lang='fr')
-        with tempfile.TemporaryFile() as f:
-            audio_file.write_to_fp(f)
-            file_name = '{}.mp3'.format(self.title)
-            self.audio_file.save(file_name, File(file=f))
-            self.audio_file = File(file=f)
+    def saveFile(self, *args, **kargs):
+        audio_file = gTTS(self.text, lang='fr')
+        audio_file.save("./audio/{}.mp3".format(self.fileName))
+
 
 class Quizattempt(models.Model):
     username = models.CharField(max_length=150)

@@ -4,7 +4,7 @@ from rest_framework import routers
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-from .views import register, login, settings, logout, getTexts, getQuizs, addTts, getTextAndQuiz, postAttempt, viewResult, addText, addPhrase, addQuiz, getPhrases, modifyText, modifyPhrase, modifyQuiz, deleteText, deletePhrase, deleteQuiz, getImageWords, addImageWord, deleteImageWord
+from .views import register, login, settings, logout, getTexts, getQuizs, addTts, getTextAndQuiz, postAttempt, viewResult, addText, addPhrase, addQuiz, getPhrases, modifyText, modifyPhrase, modifyQuiz, deleteText, deletePhrase, deleteQuiz, getImageWords, addImageWord, deleteImageWord, deleteTts
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -36,6 +36,7 @@ urlpatterns = [
     path("addImageWord/", addImageWord, name='addImageWord'),
     path("deleteImageWord/", deleteImageWord, name='deleteImageWord'),
     path("addTts/", addTts, name="addTts"),
+    path("deleteTtsInDatabase/", deleteTts, name="deleteTts"),
     path("Get Text and Quizs with a title/", getTextAndQuiz, name="Get text and quizs"),
     path("Post Attempt/", postAttempt, name="postAttempt"),
     path("viewResult/", viewResult, name="viewResult"),
