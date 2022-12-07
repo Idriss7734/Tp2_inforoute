@@ -15,7 +15,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .models import CustomUser, Texts, Tts, Quizs, Quizattempt, Phrases, ImageWords, ImageList
-from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddTtsSerializer, QuizattemptSerializer, PhrasesSerializer, addTextSerializer, addQuizSerializer, modifyTextSerializer, modifyPhraseSerializer, putPhraseSerializer, modifyQuizSerializer, ImageWordsSerializer
+from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSerializer, TextsSerializer, QuizsSerializer, AddTtsSerializer, QuizattemptSerializer, PhrasesSerializer, addTextSerializer, addQuizSerializer, modifyTextSerializer, modifyPhraseSerializer, modifyQuizSerializer, ImageWordsSerializer
 
 
 @swagger_auto_schema(
@@ -249,25 +249,32 @@ def getTextAndQuiz(request):
 
     titleImages = ImageList.objects.filter(idT = text.id).first().paths
     
-    dictT = {"title": [text.title], "paths": [titleImages]}
+    pathAudio = Tts.objects.filter(id=text.idAudio).first().path
+    dictT = {"title": [text.title], "paths": [titleImages], "pathAudio": [pathAudio]}
 
-    dictP = {"phrase": [], "paths": []}
+    dictP = {"phrase": [], "paths": [], "pathsAudio": []}
     for p in phrases:
         dictP["phrase"].append(p.phrase)
         dictP["paths"].append(ImageList.objects.filter(idP = p.id).first().paths)
+        dictP["pathsAudio"].append(Tts.objects.filter(id=p.idAudio).first().path)
+
     
-    dictQ = {"question": [], "qPaths": [], "r1": [], "r1Paths": [], "r2": [], "r2Paths": [], "r3": [], "r3Paths": [], "r4": [], "r4Paths": []}
+    dictQ = {"question": [], "qPaths": [], "r1": [], "r1Paths": [], "r1PathsAudio": [], "r2": [], "r2Paths": [], "r2PathsAudio": [], "r3": [], "r3Paths": [], "r3PathsAudio": [], "r4": [], "r4Paths": [], "r4PathsAudio": [],}
     for q in quizs:
         dictQ["question"].append(q.question)
         dictQ["qPaths"].append(ImageList.objects.filter(idQ = q.id, numR=None).first().paths)
         dictQ["r1"].append(q.reponse1)
         dictQ["r1Paths"].append(ImageList.objects.filter(idQ = q.id, numR=1).first().paths)
+        dictQ["r1PathsAudio"].append(Tts.objects.filter(id=q.idAudioR1).first().path)
         dictQ["r2"].append(q.reponse2)
         dictQ["r2Paths"].append(ImageList.objects.filter(idQ = q.id, numR=2).first().paths)
+        dictQ["r2PathsAudio"].append(Tts.objects.filter(id=q.idAudioR2).first().path)
         dictQ["r3"].append(q.reponse3)
         dictQ["r3Paths"].append(ImageList.objects.filter(idQ = q.id, numR=3).first().paths)
+        dictQ["r3PathsAudio"].append(Tts.objects.filter(id=q.idAudioR3).first().path)
         dictQ["r4"].append(q.reponse4)
         dictQ["r4Paths"].append(ImageList.objects.filter(idQ = q.id, numR=4).first().paths)
+        dictQ["r4PathsAudio"].append(Tts.objects.filter(id=q.idAudioR4).first().path)
 
     return Response(
         {"-Title": dictT, "-Phrases": dictP, "-Quizs": dictQ}, status=status.HTTP_200_OK
@@ -407,9 +414,9 @@ def modifyText(request):
 
             if title != None:
                 data['title'] = title
-
-            idAudio = createAudio(title)
-            data['idAudio'] = idAudio
+                idAudio = createAudio(title)
+                data['idAudio'] = idAudio
+            
 
             text_seri = addTextSerializer(text, data=data)
             if not text_seri.is_valid():
@@ -450,11 +457,15 @@ def modifyPhrase(request):
 
             if newPhrase != None:
                 data['phrase'] = newPhrase
+                idAudio = createAudio(newPhrase)
+                data['idAudio'] = idAudio
 
-            idAudio = createAudio(newPhrase)
-            data['idAudio'] = idAudio
+            
 
-            phrase_seri = putPhraseSerializer(phrase, data=data)
+            phrase_seri = modifyPhraseSerializer(phrase, data=data)
+            
+            return Response(data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             if not phrase_seri.is_valid():
                 return Response({"message": "invalid data in serializer"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -483,7 +494,8 @@ def modifyPhrase(request):
 def modifyQuiz(request):
     u = CustomUser.objects.get(username=request.user)
     if u.is_superuser:
-        try:
+        # try:
+        if True:
             qu = False
             r1 = False
             r2 = False
@@ -503,32 +515,39 @@ def modifyQuiz(request):
                 if q.id == int(id):
                     quiz = q  
 
-            data = {'question': quiz.question, 'reponse1': quiz.reponse1, 'reponse2': quiz.reponse2, 'reponse3': quiz.reponse3, 'reponse4': quiz.reponse4}
+            data = {'question': quiz.question, 'reponse1': quiz.reponse1, 'reponse2': quiz.reponse2, 'reponse3': quiz.reponse3, 'reponse4': quiz.reponse4, 'idAudioQ': quiz.idAudioQ, 'idAudioR1': quiz.idAudioR1, 'idAudioR2': quiz.idAudioR2, 'idAudioR3': quiz.idAudioR3, 'idAudioR4': quiz.idAudioR4}
 
             if question != None:
                 data['question'] = question
                 qu = True
+                data['idAudioQ'] = createAudio(question)
 
             if reponse1 != None:
                 data['reponse1'] = reponse1
                 r1 = True
+                data['idAudioR1'] = createAudio(reponse1)
             
             if reponse2 != None:
                 data['reponse2'] = reponse2
                 r2 = True
+                data['idAudioR2'] = createAudio(reponse2)
 
             if reponse3 != None:
                 data['reponse3'] = reponse3
                 r3 = True
+                data['idAudioR3'] = createAudio(reponse3)
 
             if reponse4 != None:
                 data['reponse4'] = reponse4
                 r4 = True
-
-            quiz_seri = QuizsSerializer(quiz, data=data)
+                data['idAudioR4'] = createAudio(reponse4)
+                
+            quiz_seri = modifyQuizSerializer(quiz, data=data)
             if not quiz_seri.is_valid():
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"data is invalid"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+            #images
             if qu:
                 linkToRemove = ImageList.objects.filter(idQ = id, numR=None).first()
                 removeLink(linkToRemove.id)
@@ -552,8 +571,8 @@ def modifyQuiz(request):
 
             quiz_seri.save()
             return Response(status=status.HTTP_200_OK)
-        except:
-            return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # except:
+        #     return Response("The user id is invalid.",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response("The user not an admin",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @swagger_auto_schema( 
@@ -753,6 +772,9 @@ def viewResult(request):
 
 
 def createAudio(fileName):
+    fileName = fileName.replace(".", "")
+    fileName = fileName.replace("?", "")
+    fileName = fileName.lower()
     if not Tts.objects.filter(fileName = fileName).exists():
         file = Tts(fileName = fileName, text = fileName, path = "./audio/{}.mp3".format(fileName))
         file.save()

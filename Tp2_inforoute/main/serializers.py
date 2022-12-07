@@ -53,17 +53,12 @@ class modifyTextSerializer(serializers.ModelSerializer):
 class modifyPhraseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Phrases
-        fields = ("id", "phrase")
-
-class putPhraseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Phrases
-        fields = ("phrase", "idAudio")
+        fields = ("id", "phrase", "idAudio")
 
 class modifyQuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quizs
-        fields = ("id", "question", "reponse1", "reponse2", "reponse3", "reponse4")
+        fields = ("question", "reponse1", "reponse2", "reponse3", "reponse4", "idAudioQ", "idAudioR1", "idAudioR2", "idAudioR3", "idAudioR4")
 
 class AddTtsSerializer(serializers.ModelSerializer):
     class Meta:
