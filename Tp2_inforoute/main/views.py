@@ -19,7 +19,7 @@ from .serializers import LoginSerializer, RegisterSerializer, SettingsAccountSer
 
 
 @swagger_auto_schema(
-    method="post", tags=["Authentication"], request_body=RegisterSerializer
+    method="post", tags=["Register"], request_body=RegisterSerializer
 )
 @api_view(["POST", "GET"])
 def register(request):
@@ -29,8 +29,7 @@ def register(request):
         username = request.data["username"]
         password = request.data["password"]
         birthday = request.data["birthday"]
-        is_superuser = request.data["is_superuser"]
-        user = CustomUser(username=username, password=make_password(password), birthday=birthday, is_superuser=is_superuser)
+        user = CustomUser(username=username, password=make_password(password), birthday=birthday)
         user.save()
     return Response(status=status.HTTP_200_OK)
 
