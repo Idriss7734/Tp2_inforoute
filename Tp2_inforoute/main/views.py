@@ -762,10 +762,15 @@ def viewResult(request):
             status=status.HTTP_200_OK,
         )
     else:
-        QuizStats = Quizattempt.objects.get(username=u.username)
-        QuizStats_serializer = QuizattemptSerializer(QuizStats)
+        QuizStats = Quizattempt.objects.filter(username=u.username)
+
+        dictQ = {"Result": [],}
+        for i in QuizStats:
+            QuizStats_serializer = QuizattemptSerializer(i)
+            dictQ["Result"].append(QuizStats_serializer.data) 
+        
         return Response(
-            QuizStats_serializer.data,
+            dictQ,
             status=status.HTTP_200_OK,
         )
 
