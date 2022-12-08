@@ -799,6 +799,9 @@ def linkImages(string, type, id, numR):
                 dict["words"].append(w.word)
                 dict["paths"].append(w.path)
 
+    if dict == {"words": [], "paths": []}:
+        dict = "no image"
+    
     match type:
         case "t": #title
             images = ImageList(paths = dict, idT=id)
